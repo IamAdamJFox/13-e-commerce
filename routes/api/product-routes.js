@@ -64,12 +64,12 @@ router.post('/', (req, res) => {
 router.put("/:id", async (req, res) => {
       try {
         await Product.update(req.body, { where: { id: req.params.id } });
-    
+        //checks to see if req.body.tags exists
         if (req.body.tags && req.body.tags.length > 0) {
-    
+          //gets product tags and ids
           const productTags = await ProductTag.findAll({ where: { product_id: req.params.id } });
           const productTagIds = productTags.map(({ tag_id }) => tag_id);
-    
+          //Filters new product tags and creates new ones  
           const newProductTags = req.body.tags
             .filter((tag_id) => !productTagIds.includes(tag_id))
             .map((tag_id) => {
@@ -78,7 +78,7 @@ router.put("/:id", async (req, res) => {
                 tag_id,
               };
             });
-    
+          //Filters product tags to delete them
           const productTagsToRemove = productTags
             .filter(({ tag_id }) => !req.body.tags.includes(tag_id))
             .map(({ id }) => id);
@@ -88,7 +88,7 @@ router.put("/:id", async (req, res) => {
             ProductTag.bulkCreate(newProductTags),
           ]);
         }
-    
+        // repsonse updates products
         const product = await Product.findByPk(req.params.id, { include: [{ model: Tag }] });
         return res.json(product);
       } catch (error) {
@@ -100,7 +100,7 @@ router.put("/:id", async (req, res) => {
 
 
 router.delete('/:id', async (req, res) => {
-
+//deletes product by id
   try {
     const product = await Product.destroy({
       where: {
@@ -108,11 +108,14 @@ router.delete('/:id', async (req, res) => {
       },
     });
     if (!product) {
-      res.status(404).json({ message: 'No product found with this id!' });
+      //if no product is found, error 404
+      res.status(404).json({ message: 'Id not found!' });
       return;
     }
+    //message for data deleted
     res.status(200).json({ message: 'Product deleted successfully!' });
   } catch (err) {
+    //if any other error, error 500
     res.status(500).json(err);
   }
 });
